@@ -106,7 +106,8 @@ if 'dynamodb' in resourceConfig:
 # Build dictionary of required MySQL Schema
 if 'mysql' in resourceConfig:
    if not 'mysql' in config:
-      die 'dresource is not configured to control mysql'
+      print 'dresource is not configured to control mysql'
+      quit()
       
    for schemaName in resourceConfig['mysql']:
       # Generate full name
