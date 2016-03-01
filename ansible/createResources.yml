@@ -1,10 +1,13 @@
 ---
 - hosts: localhost
   connection: local
+  vars:
+    - config: "{{ lookup('file', '/config/config.json') | from_json }}"
   tasks:
     - name: Build resource list
-      command: buildresource.py {{ lookup('env', 'AWS_USERNAME') }} /resources/resourceConfigFile
+      command: buildResourceList.py
       register: inputList
+      changed_when: False
     
     - name: Parse resource list
       set_fact:
@@ -12,6 +15,8 @@
     
     - name: Configure S3 Buckets
       s3_bucket:
+        aws_access_key: "{{ config.aws.aws_access_key }}"
+        aws_secret_key: "{{ config.aws.aws_secret_key }}"
         name: "{{ item }}"
         region: "{{ resourceList.s3[item].region }}"
         state: "{{ resourceList.s3[item].state }}"
@@ -21,6 +26,8 @@
 
     - name: Configure DynamoDB Tables
       dynamodb_table:
+        aws_access_key: "{{ config.aws.aws_access_key }}"
+        aws_secret_key: "{{ config.aws.aws_secret_key }}"
         name: "{{ item }}"
         region: "{{ resourceList.dynamodb[item].region }}"
         hash_key_name: "{{ resourceList.dynamodb[item].hash_key_name }}"
@@ -29,3 +36,26 @@
         state: "{{ resourceList.dynamodb[item].state }}"
       with_items:
         "{{ resourceList.dynamodb | default([]) }}"
+
+    - name: Configure MySQL Schema
+      mysql_db:
+        name: "{{ item }}"
+        login_host: "{{ resourceList.mysql_schema[item].login_host }}"
+        login_user: "{{ resourceList.mysql_schema[item].login_user }}"
+        login_password: "{{ resourceList.mysql_schema[item].login_password }}"
+        target: "{{ resourceList.mysql_schema[item].schema_file }}"
+        state: "{{ resourceList.mysql_schema[item].state }}"
+      with_items:
+        "{{ resourceList.mysql_schema | default([]) }}"
+
+    - name: Configure MySQL Users
+      mysql_user:
+        name: "{{ item }}"
+        login_host: "{{ resourceList.mysql_user[item].login_host }}"
+        login_user: "{{ resourceList.mysql_user[item].login_user }}"
+        login_password: "{{ resourceList.mysql_user[item].login_password }}"
+        password: "{{ resourceList.mysql_user[item].password }}"
+        priv: "{{ resourceList.mysql_user[item].privileges }}"
+        state: "{{ resourceList.mysql_user[item].state }}"
+      with_items:
+        "{{ resourceList.mysql_user | default([]) }}"

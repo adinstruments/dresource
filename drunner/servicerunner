@@ -36,15 +36,15 @@ SYNOPSIS
    ${CODE_S}${SERVICENAME} help${CODE_E}
       This help.
    
-   ${CODE_S}${SERVICENAME} configure USERNAME AWS_ACCESS_KEY AWS_SECRET_KEY${CODE_E}
+   ${CODE_S}${SERVICENAME} configure aws USERNAME AWS_ACCESS_KEY AWS_SECRET_KEY or configure mysql HOST USERNAME PASSWORD${CODE_E}
       Configure dResource.
   
-   ${CODE_S}${SERVICENAME} create RESOURCE_FILE${CODE_E}
-      Creates and updates resources specified in RESOURCE_FILE.
+   ${CODE_S}${SERVICENAME} create CONFIGURATION_PATH${CODE_E}
+      Creates and updates resources specified in CONFIGURATION_PATH/resource.cfg.
       Also deletes any resources that were created but are no longer specified.
    
-   ${CODE_S}${SERVICENAME} delete RESOURCE_FILE${CODE_E}
-      Deletes all resources for this username and project (specified in RESOURCE_FILE).
+   ${CODE_S}${SERVICENAME} delete CONFIGURATION_PATH${CODE_E}
+      Deletes all resources for this username and project (specified in CONFIGURATION_PATH/resource.cfg).
    
 DESCRIPTION
    Helpers for creating AWS resources. Built from ${IMAGENAME}.
@@ -130,20 +130,20 @@ function main {
 
          configure)
             shift
-            [ "$#" -eq 3 ] || die "dresource configure USERNAME AWS_ACCESS_KEY AWS_SECRET_KEY"
-            dockerrun configure $1 $2 $3
+            [ "$#" -eq 4 ] || die "dresource configure aws USERNAME AWS_ACCESS_KEY AWS_SECRET_KEY\nOR\ndresource configure mysql HOST USERNAME PASSWORD"
+            dockerrun configure.py $@
             ;;
             
          create)
             shift
-            [ "$#" -eq 1 ] || die "dresource create RESOURCE_FILE"
-            dockerrunwithvolumes "-v $1:/resources/resourceConfigFile" "run createResources.yml"
+            [ "$#" -eq 1 ] || die "dresource create CONFIGURATION_PATH"
+            dockerrunwithvolumes "-v $(realpath $1):/resources/resources.cfg" "run.sh createResources.yml"
            ;;
            
          delete)
             shift
-            [ "$#" -eq 1 ] || die "dresource delete RESOURCE_FILE"
-            dockerrunwithvolumes "-v $1:/resources/resourceConfigFile" "run deleteResources.yml"
+            [ "$#" -eq 1 ] || die "dresource delete CONFIGURATION_PATH"
+            dockerrunwithvolumes "-v $(realpath $1):/resources/resources.cfg" "run.sh deleteResources.yml"
            ;;
             
          #--- unrecognised commands
